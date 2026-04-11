@@ -1,0 +1,126 @@
+// prisma/schema.prisma
+// Database: PostgreSQL (Render / Supabase / Neon)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Business / Client ───────────────────────────────────────────────────────
+model Business {
+  id            String    @id @default(uuid())
+  name          String
+  waPhoneNumber String    @unique  // WhatsApp number (E.164 format: +91XXXXXXXXXX)
+  waPhoneId     String    @unique  // Meta Phone Number ID
+  wabaId        String             // WhatsApp Business Account ID
+  accessToken   String             // Meta permanent access token
+  aiPersona     String    @default("You are a helpful customer support assistant.")
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  customers     Customer[]
+  orders        Order[]
+  conversations Conversation[]
+}
+
+// ─── Customer ─────────────────────────────────────────────────────────────────
+model Customer {
+  id          String   @id @default(uuid())
+  phone       String                        // E.164 format
+  name        String?
+  email       String?
+  address     String?
+  businessId  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  business      Business       @relation(fields: [businessId], references: [id])
+  orders        Order[]
+  conversations Conversation[]
+  messages      Message[]
+
+  @@unique([phone, businessId])
+}
+
+// ─── Conversation ─────────────────────────────────────────────────────────────
+model Conversation {
+  id           String             @id @default(uuid())
+  customerId   String
+  businessId   String
+  stage        ConversationStage  @default(GREETING)
+  isActive     Boolean            @default(true)
+  lastMessageAt DateTime          @default(now())
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  customer  Customer  @relation(fields: [customerId], references: [id])
+  business  Business  @relation(fields: [businessId], references: [id])
+  messages  Message[]
+  order     Order?
+}
+
+// ─── Message ──────────────────────────────────────────────────────────────────
+model Message {
+  id             String      @id @default(uuid())
+  conversationId String
+  customerId     String
+  role           MessageRole
+  content        String
+  waMessageId    String?     @unique   // WhatsApp message ID
+  createdAt      DateTime    @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+  customer     Customer     @relation(fields: [customerId], references: [id])
+}
+
+// ─── Order ────────────────────────────────────────────────────────────────────
+model Order {
+  id             String      @id @default(uuid())
+  orderNumber    String      @unique @default(cuid())
+  customerId     String
+  businessId     String
+  conversationId String?     @unique
+  status         OrderStatus @default(PENDING)
+
+  // Order details collected via chat
+  items          String?     // JSON string: [{name, qty, price}]
+  totalAmount    Float?
+  deliveryAddress String?
+  notes          String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  customer     Customer      @relation(fields: [customerId], references: [id])
+  business     Business      @relation(fields: [businessId], references: [id])
+  conversation Conversation? @relation(fields: [conversationId], references: [id])
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+enum ConversationStage {
+  GREETING
+  COLLECTING_ORDER
+  COLLECTING_ADDRESS
+  CONFIRMING_ORDER
+  COMPLETED
+  HUMAN_HANDOFF
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
