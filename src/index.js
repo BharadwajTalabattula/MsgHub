@@ -34,7 +34,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ------ Routes ------------------------------------------
-// app.use('/api', routes);
+ app.use('/api', routes);
 
 
 // Root
