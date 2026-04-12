@@ -9,7 +9,7 @@ const rateLimit = require('express-rate-limit');
 const routes = require('./routes');
 const app = express();
 app.set('trust proxy', 1); // ← add this line
-const PORT = process.env.PORT
+const PORT = process.env.PORT || 3000;
 
 
 //------------------security & Middleware ----------------------
@@ -63,10 +63,22 @@ app.use((err, req, res, next)=>{
     res.status(err.status || 500).json({error: err.message || 'Internal server error'});
 })
 
-app.listen(PORT, ()=>{
-    console.log(`WhatsApp AI Bot running on port${PORT}`);
-    console.log(` ENV: ${process.env.NODE_ENV || 'development'}`)
-    console.log(`   Webhook URL: ${process.env.APP_URL}/api/webhook\n`);
-})
+app.listen(PORT, () => {
+    console.log(`WhatsApp AI Bot running on port ${PORT}`);
+    console.log(`ENV: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`Webhook URL: ${process.env.APP_URL}/api/webhook\n`);
+
+    // Keep Render free tier alive (ping every 14 minutes)
+    if (process.env.NODE_ENV === 'production') {
+        setInterval(() => {
+            const url = process.env.APP_URL + '/api/health';
+            require('https').get(url, (res) => {
+                console.log(`[Keep-alive] ${res.statusCode}`);
+            }).on('error', (e) => {
+                console.warn('[Keep-alive] failed:', e.message);
+            });
+        }, 14 * 60 * 1000);
+    }
+});
 
 module.exports = app;
