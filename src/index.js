@@ -8,6 +8,7 @@ const rateLimit = require('express-rate-limit');
 
 const routes = require('./routes');
 const app = express();
+app.set('trust proxy', 1); // ← add this line
 const PORT = process.env.PORT
 
 
