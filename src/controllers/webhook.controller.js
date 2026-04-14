@@ -29,8 +29,8 @@ async function handleWebhook(req, res) {
 
   try {
     const parsed = parseIncomingMessage(req.body);
-    console.log("Incoming webhook:", JSON.stringify(req.body, null, 2));
-    console.log("Parsed:", parsed);
+    // console.log("Incoming webhook:", JSON.stringify(req.body, null, 2));
+    // console.log("Parsed:", parsed);
     // if (!parsed || parsed.messageType !== 'text' || !parsed.text) return;
 
     if (!parsed) {

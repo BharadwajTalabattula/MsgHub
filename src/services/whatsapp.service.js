@@ -66,90 +66,25 @@ async function markMessageRead(phoneNumberId, accessToken, messageId) {
 /**
  * Parse incoming webhook payload and extract message info
  */
-// function parseIncomingMessage(body) {
-//   try {
-//     const entry = body.entry?.[0];
-//     const change = entry?.changes?.[0];
-//     const value = change?.value;
-
-//     if (!value?.messages?.length) return null;
-
-//     const message = value.messages[0];
-//     const contact = value.contacts?.[0];
-//     const metadata = value.metadata;
-
-//     return {
-//       phoneNumberId: metadata.phone_number_id,  // Business phone number ID
-//       from: message.from,                        // Customer phone
-//       customerName: contact?.profile?.name || 'Customer',
-//       messageId: message.id,
-//       messageType: message.type,
-//       text: message.type === 'text' ? message.text?.body : null,
-//       timestamp: message.timestamp,
-//     };
-//   } catch (err) {
-//     console.error('[WhatsApp] Parse error:', err);
-//     return null;
-//   }
-// }
 function parseIncomingMessage(body) {
   try {
     const entry = body.entry?.[0];
     const change = entry?.changes?.[0];
     const value = change?.value;
 
-    // ✅ 1. Handle STATUS updates (ignore them properly)
-    if (value?.statuses) {
-      console.log("📦 Status event received");
-      return null;
-    }
-
-    // ✅ 2. Validate messages exist
-    if (!value?.messages?.length) {
-      console.log("⚠️ No messages in payload");
-      return null;
-    }
+    if (!value?.messages?.length) return null;
 
     const message = value.messages[0];
     const contact = value.contacts?.[0];
     const metadata = value.metadata;
 
-    // ✅ 3. Handle ALL message types (IMPORTANT FIX)
-    let text = null;
-
-    switch (message.type) {
-      case 'text':
-        text = message.text?.body;
-        break;
-
-      case 'button':
-        text = message.button?.text;
-        break;
-
-      case 'interactive':
-        text =
-          message.interactive?.button_reply?.title ||
-          message.interactive?.list_reply?.title;
-        break;
-
-      default:
-        text = `[${message.type} message]`;
-    }
-
-    // ✅ 4. Log for debugging
-    console.log("📩 Incoming message:", {
-      from: message.from,
-      type: message.type,
-      text,
-    });
-
     return {
-      phoneNumberId: metadata.phone_number_id,
-      from: message.from,
+      phoneNumberId: metadata.phone_number_id,  // Business phone number ID
+      from: message.from,                        // Customer phone
       customerName: contact?.profile?.name || 'Customer',
       messageId: message.id,
       messageType: message.type,
-      text,
+      text: message.type === 'text' ? message.text?.body : null,
       timestamp: message.timestamp,
     };
   } catch (err) {
