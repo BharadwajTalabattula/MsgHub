@@ -29,9 +29,23 @@ async function handleWebhook(req, res) {
 
   try {
     const parsed = parseIncomingMessage(req.body);
-    if (!parsed || parsed.messageType !== 'text' || !parsed.text) return;
+    console.log("Incoming webhook:", JSON.stringify(req.body, null, 2));
+    console.log("Parsed:", parsed);
+    // if (!parsed || parsed.messageType !== 'text' || !parsed.text) return;
+
+    if (!parsed) {
+      console.log("❌ Parsing failed");
+      return;
+    }
+    
+    if (parsed.messageType !== 'text') {
+      console.log("⚠️ Non-text message:", parsed.messageType);
+      return;
+    }
 
     const { phoneNumberId, from, customerName, messageId, text } = parsed;
+
+    console.log("Sending reply to:", from);
 
     // 1. Find which business this phone number belongs to
     const business = await prisma.business.findUnique({
